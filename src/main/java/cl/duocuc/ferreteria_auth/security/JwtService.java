@@ -33,7 +33,7 @@ public class JwtService {
         .issuer(issuer)
         .subject(usuario.getCorreo())
         .claim("rol", usuario.getRol())
-        .claim("nombre", usuario.getNombre())
+        .claim("nombre", usuario.nombreCompleto())
         .issuedAt(ahora)
         .expiration(new Date(ahora.getTime() + expirationMs))
         .signWith(clave())

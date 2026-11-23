@@ -16,13 +16,23 @@ public class AuthExceptionHandler {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
   }
 
+  @ExceptionHandler(RecursoNoEncontradoException.class)
+  ResponseEntity<Map<String, String>> noEncontrado(RecursoNoEncontradoException e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+  }
+
   @ExceptionHandler(ReglaNegocioException.class)
   ResponseEntity<Map<String, String>> reglaNegocio(ReglaNegocioException e) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
   }
 
+  @ExceptionHandler(DatosInvalidosException.class)
+  ResponseEntity<Map<String, String>> datosInvalidos(DatosInvalidosException e) {
+    return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  ResponseEntity<Map<String, String>> datosInvalidos(MethodArgumentNotValidException e) {
+  ResponseEntity<Map<String, String>> validacion(MethodArgumentNotValidException e) {
     String mensaje = e.getBindingResult().getFieldErrors().stream()
         .findFirst()
         .map(error -> error.getField() + ": " + error.getDefaultMessage())

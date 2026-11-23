@@ -3,10 +3,12 @@ package cl.duocuc.ferreteria_auth.service;
 import cl.duocuc.ferreteria_auth.dto.LoginRequest;
 import cl.duocuc.ferreteria_auth.dto.LoginResponse;
 import cl.duocuc.ferreteria_auth.dto.RegistroRequest;
+import cl.duocuc.ferreteria_auth.exception.DatosInvalidosException;
 import cl.duocuc.ferreteria_auth.exception.ReglaNegocioException;
 import cl.duocuc.ferreteria_auth.model.Usuario;
 import cl.duocuc.ferreteria_auth.repository.UsuarioRepository;
 import cl.duocuc.ferreteria_auth.security.JwtService;
+import cl.duocuc.ferreteria_auth.validation.ValidadorRun;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -38,13 +40,28 @@ public class AuthService {
 
   // Quien se registra desde la tienda SIEMPRE queda como CLIENTE
   public LoginResponse registrar(RegistroRequest datos) {
-    if (usuarios.existsByCorreoIgnoreCase(datos.correo())) {
-      throw new ReglaNegocioException("Ya existe un usuario con el correo: " + datos.correo());
+    if (!ValidadorRun.esValido(datos.run())) {
+      throw new DatosInvalidosException("run: RUN inválido (dígito verificador incorrecto)");
     }
+    String run = datos.run().trim().toUpperCase();
+    String correo = datos.correo().trim().toLowerCase();
+
+    if (usuarios.existsByCorreoIgnoreCase(correo)) {
+      throw new ReglaNegocioException("Ya existe un usuario con el correo: " + correo);
+    }
+    if (usuarios.existsByRun(run)) {
+      throw new ReglaNegocioException("Ya existe un usuario con el RUN: " + run);
+    }
+
     Usuario usuario = new Usuario();
+    usuario.setRun(run);
     usuario.setNombre(datos.nombre().trim());
-    usuario.setCorreo(datos.correo().trim().toLowerCase());
+    usuario.setApellidos(datos.apellidos().trim());
+    usuario.setCorreo(correo);
     usuario.setPassword(encoder.encode(datos.password()));
+    usuario.setRegion(datos.region());
+    usuario.setComuna(datos.comuna());
+    usuario.setDireccion(datos.direccion().trim());
     usuario.setRol("CLIENTE");
     return respuesta(usuarios.save(usuario));
   }
@@ -66,6 +83,6 @@ public class AuthService {
   }
 
   private LoginResponse respuesta(Usuario u) {
-    return new LoginResponse(jwt.generar(u), u.getCorreo(), u.getNombre(), u.getRol());
+    return new LoginResponse(jwt.generar(u), u.getCorreo(), u.nombreCompleto(), u.getRol());
   }
 }
